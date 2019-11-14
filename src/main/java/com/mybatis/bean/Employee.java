@@ -1,4 +1,4 @@
-package bean;
+package com.mybatis.bean;
 
 /**
  * @author Lee

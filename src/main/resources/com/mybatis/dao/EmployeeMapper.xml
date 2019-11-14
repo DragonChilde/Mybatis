@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 配置SQL映射
+	 namespace: 名称空间.
+	 		1. 随便写
+	 		2. Mapper接口开发，不能随便写，按照规定来写。
+
+ -->
+<!--Mapper接口与Mapper文件映射绑定-->
+<mapper namespace="com.mybatis.dao.EmployeeMapper">
+    <!--
+		<select>: 定义查询语句
+			id:  <select>的唯一标识
+			resultType:  结果集的映射类型。
+			#{id}: 获取参数值
+
+	 -->
+    <!-- select *  from tbl_employee where id = #{id} -->
+    <select id="selectEmployee" resultType="com.mybatis.bean.Employee">
+        <!--注意这里的last_name不启用别明会与自定义的bean类无法关联取不到值-->
+        select id,last_name AS lastName ,email ,gender from tbl_employee where id = #{id}
+    </select>
+
+    <!-- public Employee getEmployeeById(Integer id ); -->
+    <!--Mapper接口方法与Mapper文件中的方法绑定-->
+<!-- <select id="selectEmployeeById" resultType="com.mybatis.bean.Employee">
+        select id,last_name AS lastName ,email ,gender from tbl_employee where id = #{id}
+    </select>-->
+
+
+
+    <!-- public Employee getEmployeeById(Integer id ); -->
+    <!--Mapper接口方法与Mapper文件中的方法绑定-->
+    <select id="selectEmployeeById" resultType="employee">
+        <!--开启驼峰命名后可以不需要SQL别名-->
+        <!--select id,last_name AS lastName ,email ,gender from tbl_employee where id = #{id}-->
+        select id,last_name ,email ,gender from tbl_employee where id = #{id}
+    </select>
+</mapper>
+
