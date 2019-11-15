@@ -462,7 +462,7 @@ MyBatis 的配置文件包含了影响 MyBatis 行为甚深的设置（settings�
 
 	注意:这里会有一个问题,如果同一个包路径下的子包有相同的类名会报异常
 
-	### Cause: org.apache.ibatis.builder.BuilderException: Error parsing SQL Mapper Configuration. Cause: org.apache.ibatis.type.TypeException: The alias 'Employee' is already mapped to the value 'com.mybatis.bean.sub.Employee'.
+	Cause: org.apache.ibatis.builder.BuilderException: Error parsing SQL Mapper Configuration. Cause: org.apache.ibatis.type.TypeException: The alias 'Employee' is already mapped to the value 'com.mybatis.bean.sub.Employee'.
 
 		解决办法:
 			1. 不要用相同类名
@@ -582,6 +582,8 @@ MyBatis 的配置文件包含了影响 MyBatis 行为甚深的设置（settings�
 
 	在\src\main\resources目录下建立相同的包名\com\mybatis\dao,把EmployeeMapper.xml放进去,这种方式就不需要改maven工程的pom文件,可以把Mapper接口文件和xml文件分离
 
+
+**注意:全局配置的属性是有执行的先后顺序的,具体可参考点击配置文件里的configuration标签查看**
 	
 # MyBatis 映射文件 #
 
@@ -605,22 +607,91 @@ MyBatis 的配置文件包含了影响 MyBatis 行为甚深的设置（settings�
 ### select ###
 
 1. Mapper接口方法
+
+		 public Employee selectEmployeeById(Integer id);
+
 2. Mapper映射文件
+
+		 <select id="selectEmployeeById" resultType="employee">
+	        select id,last_name ,email ,gender from tbl_employee where id = #{id}
+	    </select>
 
 ### insert ###
 
 1. Mapper接口方法
+
+		public void insertEmployee(Employee employee);
+
 2. Mapper映射文件
+
+	    <!-- public void insertEmployee(Employee employee);
+		 parameterType:指定参数类型. 可以省略不配置.
+		-->
+		<insert id="insertEmployee" parameterType="com.mybatis.bean.Employee">
+		    insert into tbl_employee (last_name,email,gender) VALUES (#{lastName},#{email},#{gender})
+		</insert>
 
 ### update ###
 
 1. Mapper接口方法
+
+		public void updateEmployeeById(Employee employee);
+
 2. Mapper映射文件
+
+		 <update id="updateEmployeeById">
+	        update tbl_employee set last_name=#{lastName},email=#{email},gender=#{gender} where id =#{id}
+	    </update>
 
 ### delete ###
 
 1. Mapper接口方法
+
+		public void delEmployeeById(Integer id);
+
 2. Mapper映射文件
+
+		 <delete id="delEmployeeById">
+	       delete from tbl_employee  where id =#{id}
+	    </delete>
+
+**注意:Mapper调用完接口方法后是没把数据提交到数据库的,成功提交是需要开启自动提交或者手动提交的**
+
+	1. sessionFactory.openSession(true);	//openSession()带布尔类型参数,默认是false,true是自动提交
+	2. session.commit();		//手动提交
+
+	private SqlSessionFactory createSessionFactory() throws IOException
+    {
+        String resource = "mybatis-config.xml";
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        return new SqlSessionFactoryBuilder().build(inputStream);
+    }
+
+    @Test
+    public void testCRUDMapper() throws IOException
+    {
+        SqlSessionFactory sessionFactory = this.createSessionFactory();
+        /*如果需要自动提交设置为true,否则用手动提交commit()*/
+        SqlSession session = sessionFactory.openSession(true);
+        EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
+       	mapper.delEmployeeById(1003);
+		/**手动提交**/
+		//session.commit();
+    }
+
+在增删改操作里,Mybatis执行可以看到会有返回值
+
+	DEBUG 11-15 14:45:18,317 ==>  Preparing: insert into tbl_employee (last_name,email,gender) VALUES (?,?,?)   (BaseJdbcLogger.java:145) 
+	DEBUG 11-15 14:45:18,348 ==> Parameters: 苍井老师(String), chuangjin@gmail.com(String), 1(Integer)  (BaseJdbcLogger.java:145) 
+	DEBUG 11-15 14:45:18,367 <==    Updates: 1  (BaseJdbcLogger.java:145) 
+
+只要把原方法改成有返回值就可以获取打印
+
+	public Integer insertEmployee(Employee employee);
+
+也可以改成返回boolean类型的值,会根据如果是1为ture,为0则false
+
+	 public boolean insertEmployee(Employee employee);
 
 ## 主键生成方式、获取主键值 ##
 
@@ -630,29 +701,196 @@ MyBatis 的配置文件包含了影响 MyBatis 行为甚深的设置（settings�
 
 ### 获取主键值 ###
 1. 若数据库支持自动生成主键的字段（比如 MySQL 和 SQL Server），则可以设置 useGeneratedKeys=”true”，然后再把 keyProperty 设置到目标属性上。
+	
+	    <!-- public void insertEmployee(Employee employee);
+			 parameterType:指定参数类型. 可以省略不配置.
+	
+			 useGeneratedKeys:告诉Mybatis使用主键自增的方式
+			 keyProperty:  指定用对象的哪个属性保存Mybatis返回的主键值
+		-->
+		<!--注意:这里keyProperty对应的是Employee bean里的private Integer id ;-->
+	    <insert id="insertEmployee" parameterType="com.mybatis.bean.Employee" useGeneratedKeys="true" keyProperty="id">
+	        insert into tbl_employee (last_name,email,gender) VALUES (#{lastName},#{email},#{gender})
+	    </insert>
+
+执行添加操作:
+
+    //添加
+    Employee employee = new Employee(null, "苍井老师", "chuangjin@gmail.com", 1);
+    boolean b = mapper.insertEmployee(employee);
+    //提交
+    session.commit();
+    System.out.println(b);
+    System.out.println(employee);
+
+	/**
+	DEBUG 11-15 15:21:07,096 ==>  Preparing: insert into tbl_employee (last_name,email,gender) VALUES (?,?,?)   (BaseJdbcLogger.java:145) 
+	DEBUG 11-15 15:21:07,120 ==> Parameters: 苍井老师(String), chuangjin@gmail.com(String), 1(Integer)  (BaseJdbcLogger.java:145) 
+	DEBUG 11-15 15:21:07,135 <==    Updates: 1  (BaseJdbcLogger.java:145) 
+	true
+	Employee{id=1008, lastName='苍井老师', email='chuangjin@gmail.com', gender=1}
+
+	**/
+
+其获取主键的原理可参考JDBC获取主键值:
+
+		 /*JDBC操作获取新插入数据的主键值:*/
+       	Connection con =null;
+		/** PreparedStatement prepareStatement(String sql, int autoGeneratedKeys)
+        throws SQLException;**/
+        java.sql.PreparedStatement sql = con.prepareStatement("sql", PreparedStatement.RETURN_GENERATED_KEYS);
+        sql.execute();
+        sql.getGeneratedKeys();
 
 ## 参数传递 ##
 
 ### 参数传递的方式 ###
 
-1. 单个普通(基本/包装+String)参数
-	这种情况MyBatis可直接使用这个参数，不需要经过任	何处理。
-	取值:#{随便写}
-2. 多个参数
-任意多个参数，都会被MyBatis重新包装成一个Map传入。Map的key是param1，param2，或者0，1…，值就是参数的值
-取值: #{0 1 2 …N / param1  param2  ….. paramN}
-3. 命名参数
-为参数使用@Param起一个名字，MyBatis就会将这些参数封装进map中，key就是我们自己指定的名字
-取值: #{自己指定的名字 /  param1  param2 … paramN}
-4. POJO
-当这些参数属于我们业务POJO时，我们直接传递POJO
-取值: #{POJO的属性名}
-5. Map
-我们也可以封装多个参数为map，直接传递
-取值: #{使用封装Map时自己指定的key}
-6. Collection/Array
-会被MyBatis封装成一个map传入, Collection对应的key是collection,Array对应的key是array. 如果确定是List集合，key还可以是list.
-取值:  
-	Array: #{array}
-	Collection(List/Set): #{collection}
-	List : #{collection / list}
+#### 单个普通(基本/包装+String)参数 ####
+
+- 这种情况MyBatis可直接使用这个参数，不需要经过任何处理。
+- 取值:#{随便写}
+
+		 <select id="selectEmployeeById" resultType="employee">
+			<!--id名可以随便写也可以获取到,改成#{idaaaaa}-->
+	        <!--select id,last_name AS lastName ,email ,gender from tbl_employee where id = #{id}-->
+	        select id,last_name ,email ,gender from tbl_employee where id = #{id}
+	    </select>
+
+
+#### 多个参数 ####
+任意多个参数，都会被MyBatis重新包装成一个Map传入。
+
+- Map的key是param1，param2，或者0，1…，值就是参数的值
+- 取值: #{0 1 2 …N / param1  param2  ….. paramN}
+
+	**EmployeeMapper**
+
+		public Employee selectEmployeeByIdAndLastName(Integer id,String lastName);
+
+	**EmployeeMapper.xml**
+
+		 <select id="selectEmployeeByIdAndLastName" resultType="com.mybatis.bean.Employee">
+	        select id,last_name,email,gender from tbl_employee where id =#{0} and last_name=#{1}
+	    </select>
+			或者:
+		 <select id="selectEmployeeByIdAndLastName" resultType="com.mybatis.bean.Employee">
+	        select id,last_name,email,gender from tbl_employee where id =#{param1} and last_name=#{param2}
+	    </select>
+
+	**测试**
+
+	    @Test
+	    public void testParameter() throws IOException
+	    {
+	        SqlSessionFactory sessionFactory = this.createSessionFactory();
+	        SqlSession session = sessionFactory.openSession();
+	        EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
+	        Employee employee = mapper.selectEmployeeByIdAndLastName(1001, "李四");
+	        System.out.println(employee);
+	    }
+
+	
+	**务必务必注意:多参数情况下取值是#{0 1 2 …N / param1  param2  ….. paramN},从0开始或者是param1开始**
+	
+	使用命名的错误方式:
+	
+			<select id="selectEmployeeByIdAndLastName" resultType="com.mybatis.bean.Employee">
+		        select id,last_name,email,gender from tbl_employee where id =#{id} and last_name=#{lastName}
+		    </select>
+	
+	会报如下异常:
+	
+			/**提示形参没有匹配到**/
+			/**
+				org.apache.ibatis.exceptions.PersistenceException: 
+				### Error querying database.  Cause: org.apache.ibatis.binding.BindingException: Parameter 'id' not found. Available parameters are [0, 1, param1, param2]
+				### Cause: org.apache.ibatis.binding.BindingException: Parameter 'id' not found. Available parameters are [0, 1, param1, param2]
+			**/
+
+#### 命名参数 ####
+
+- 为参数使用@Param起一个名字，MyBatis就会将这些参数封装进map中，key就是我们自己指定的名字
+- 取值: #{自己指定的名字 /  param1  param2 … paramN}
+	
+	**EmployeeMapper.selectEmployeeByIdAndLastName()改成以命名方式指定Key**
+
+		public Employee selectEmployeeByIdAndLastName(@Param("id") Integer id, @Param("lastName") String lastName);
+
+	**EmployeeMapper.xml**:现在可以用上面报异常的方式
+
+		<select id="selectEmployeeByIdAndLastName" resultType="com.mybatis.bean.Employee">
+	        select id,last_name,email,gender from tbl_employee where id =#{id} and last_name=#{lastName}
+	    </select>
+
+	现在不会报异常了,使用以#{paramN}的方式也可以
+
+		<select id="selectEmployeeByIdAndLastName" resultType="com.mybatis.bean.Employee">
+	        select id,last_name,email,gender from tbl_employee where id =#{param1} and last_name=#{param2}
+	    </select>
+
+	但以${N}的方式是会有异常,可以看到Map的key已经改成以命名方式的
+
+		  <select id="selectEmployeeByIdAndLastName" resultType="com.mybatis.bean.Employee">
+	        select id,last_name,email,gender from tbl_employee where id =#{0} and last_name=#{1}
+		</select>
+
+		/**
+		org.apache.ibatis.exceptions.PersistenceException: 
+		### Error querying database.  Cause: org.apache.ibatis.binding.BindingException: Parameter '0' not found. Available parameters are [lastName, id, param1, param2]
+		### Cause: org.apache.ibatis.binding.BindingException: Parameter '0' not found. Available parameters are [lastName, id, param1, param2]
+		*/
+
+#### POJO ####
+- 当这些参数属于我们业务POJO时，我们直接传递POJO
+- 取值: #{POJO的属性名}
+
+之前增改操作就是个例子,这里不多作介绍,介绍在多参的情况下传下POJO
+
+举例:假如传入两个Employee对象,以命名方式先绑定其中一个为emp,然后以#{emp.属性}进行取值
+
+#### Map ####
+
+- 我们也可以封装多个参数为map，直接传递
+- 取值: #{使用封装Map时自己指定的key}
+
+	**EmployeeMapper**
+
+		public Employee selectEmployeeByMap(Map<String,Object> map);
+
+	**EmployeeMapper.xml**
+
+		<!--注意:这里的命名方式是在Map里指定的key-->
+	    <select id="selectEmployeeByMap" resultType="com.mybatis.bean.Employee">
+	        select id,last_name,email,gender from tbl_employee where id =#{id} and last_name=#{ln}
+	    </select>
+
+	**测试**
+
+		@Test
+	    public void testParameter() throws IOException
+	    {
+	        SqlSessionFactory sessionFactory = this.createSessionFactory();
+	        SqlSession session = sessionFactory.openSession();
+	        EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
+	
+	        HashMap<String, Object> map = new HashMap<>();
+	        map.put("id",1001);
+	        map.put("ln","李四");
+	        Employee employee = mapper.selectEmployeeByMap(map);
+	        System.out.println(employee);
+	    }
+
+#### Collection/Array ####
+
+- 会被MyBatis封装成一个map传入, Collection对应的key是collection,Array对应的key是array. 如果确定是List集合，key还可以是list.
+- 取值:  
+
+		Array: #{array}
+		Collection(List/Set): #{collection}
+		List : #{collection / list}
+
+### 参数传递源码分析 ###
+
+1. 以命名参数为例
+2. 源码:前提:  args=[1024,苍老师]    names={0=id ,1=lastName}

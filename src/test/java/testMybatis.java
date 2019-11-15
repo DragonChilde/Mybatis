@@ -1,5 +1,6 @@
 import com.mybatis.bean.Employee;
 import com.mybatis.dao.EmployeeMapper;
+
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -8,6 +9,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 
 
 /**
@@ -89,4 +91,67 @@ public class testMybatis {
             session.close();
         }
     }
+
+    private SqlSessionFactory createSessionFactory() throws IOException
+    {
+
+        String resource = "mybatis-config.xml";
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        return new SqlSessionFactoryBuilder().build(inputStream);
+
+    }
+
+    @Test
+    public void testCRUDMapper() throws Exception
+    {
+        SqlSessionFactory sessionFactory = this.createSessionFactory();
+
+        /*如果需要自动提交不设置为true,否则用手动提交commit()*/
+        SqlSession session = sessionFactory.openSession();
+        EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
+
+        /*JDBC操作获取新插入数据的主键值:*/
+       /* Connection con =null;
+        java.sql.PreparedStatement sql = con.prepareStatement("sql", PreparedStatement.RETURN_GENERATED_KEYS);
+        sql.execute();
+        sql.getGeneratedKeys();*/
+
+        //添加
+        Employee employee = new Employee(null, "苍井老师", "chuangjin@gmail.com", 1);
+        boolean b = mapper.insertEmployee(employee);
+        //提交
+        session.commit();
+        System.out.println(b);
+        System.out.println(employee);
+
+        ////修改
+    /*    Employee employee = new Employee(1003, "苍井老师", "chuangjin@gmail.com", 1);
+
+        mapper.updateEmployeeById(employee);*/
+
+        //删除
+       //mapper.delEmployeeById(1004);
+
+
+    }
+
+
+    @Test
+    public void testParameter() throws IOException
+    {
+        SqlSessionFactory sessionFactory = this.createSessionFactory();
+        SqlSession session = sessionFactory.openSession();
+        EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
+/*
+        Employee employee = mapper.selectEmployeeByIdAndLastName(1001, "李四");
+*/
+
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("id",1001);
+        map.put("ln","李四");
+        Employee employee = mapper.selectEmployeeByMap(map);
+        System.out.println(employee);
+    }
+
+
 }

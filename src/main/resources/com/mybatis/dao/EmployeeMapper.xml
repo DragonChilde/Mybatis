@@ -36,7 +36,40 @@
     <select id="selectEmployeeById" resultType="employee">
         <!--开启驼峰命名后可以不需要SQL别名-->
         <!--select id,last_name AS lastName ,email ,gender from tbl_employee where id = #{id}-->
-        select id,last_name ,email ,gender from tbl_employee where id = #{id}
+        select id,last_name ,email ,gender from tbl_employee where id = #{idaaaa}
+    </select>
+
+
+    <!-- public void insertEmployee(Employee employee);
+		 parameterType:指定参数类型. 可以省略不配置.
+
+		 useGeneratedKeys:告诉Mybatis使用主键自增的方式
+		 keyProperty:  指定用对象的哪个属性保存Mybatis返回的主键值
+	-->
+    <!--注意:这里keyProperty对应的是Employee bean里的private Integer id ;-->
+    <insert id="insertEmployee" parameterType="com.mybatis.bean.Employee" useGeneratedKeys="true" keyProperty="id">
+        insert into tbl_employee (last_name,email,gender) VALUES (#{lastName},#{email},#{gender})
+    </insert>
+
+    <!-- public void updateEmployeeById(Employee employee); -->
+    <update id="updateEmployeeById">
+        update tbl_employee set last_name=#{lastName},email=#{email},gender=#{gender} where id =#{id}
+    </update>
+
+    <!-- public void deleteEmployeeById(Integer id ); -->
+    <delete id="delEmployeeById">
+        delete from tbl_employee  where id =#{id}
+    </delete>
+
+    <!--public Employee selectEmployeeByIdAndLastName(@Param("id") Integer id, @Param("lastName") String lastName);-->
+    <select id="selectEmployeeByIdAndLastName" resultType="com.mybatis.bean.Employee">
+        select id,last_name,email,gender from tbl_employee where id =#{id} and last_name=#{lastName}
+    </select>
+
+   <!-- public Employee selectEmployeeByMap(Map<String,Object> map);-->
+    <!--注意:这里的命名方式是在Map里指定的key-->
+    <select id="selectEmployeeByMap" resultType="com.mybatis.bean.Employee">
+        select id,last_name,email,gender from tbl_employee where id =#{id} and last_name=#{ln}
     </select>
 </mapper>
 
