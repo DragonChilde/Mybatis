@@ -10,6 +10,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -142,16 +144,27 @@ public class testMybatis {
         SqlSessionFactory sessionFactory = this.createSessionFactory();
         SqlSession session = sessionFactory.openSession();
         EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
-/*
-        Employee employee = mapper.selectEmployeeByIdAndLastName(1001, "李四");
-*/
+/*        Employee employee = mapper.selectEmployeeByIdAndLastName(1001, "李四");*/
 
         HashMap<String, Object> map = new HashMap<>();
         map.put("id",1001);
         map.put("ln","李四");
+        map.put("tableName","tbl_employee");
         Employee employee = mapper.selectEmployeeByMap(map);
         System.out.println(employee);
     }
 
+
+    @Test
+    public void testSelect() throws IOException
+    {
+        SqlSessionFactory sessionFactory = this.createSessionFactory();
+        SqlSession session = sessionFactory.openSession();
+        EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
+        //List<Employee> emps = mapper.getAllEmps();
+        //Map<String, Object> emps = mapper.getEmployeeByIdReturnMap(1001);
+        Map<Integer, Employee> emps = mapper.getEmployeesReturnMap();
+        System.out.println(emps);
+    }
 
 }

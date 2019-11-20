@@ -25,6 +25,10 @@
     <settings>
         <!-- 映射下划线到驼峰命名 ,默认是关闭的-->
         <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!-- 开启延迟加载 -->
+        <setting name="lazyLoadingEnabled" value="true"/>
+        <!-- 配置按需加载-->
+        <setting name="aggressiveLazyLoading" value="false"/>
     </settings>
 
     <typeAliases>

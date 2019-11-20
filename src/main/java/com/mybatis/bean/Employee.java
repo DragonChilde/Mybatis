@@ -9,6 +9,7 @@ public class Employee {
     private String lastName;
     private String email ;
     private Integer gender ;
+    private Department department;
 
     public Employee(Integer id, String lastName, String email, Integer gender) {
         this.id = id;
@@ -50,6 +51,14 @@ public class Employee {
 
     public void setGender(Integer gender) {
         this.gender = gender;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     @Override

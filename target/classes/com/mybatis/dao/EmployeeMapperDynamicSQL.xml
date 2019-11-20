@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mybatis.dao.EmployeeMapperDynamicSQL">
+
+    <!--public List<Employee> getEmpsByConditionIfWhere(Employee condition);-->
+    <select id="getEmpsByConditionIfWhere" resultType="com.mybatis.bean.Employee">
+        select id ,last_name,email,gender from tbl_employee
+
+        <!-- 在SQL语句中提供WHERE关键字，  并且要解决第一个出现的and 或者是 or的问题 -->
+        <!-- 相当于where 1=1 -->
+        <where>
+            <!--if条件语句,判断id不为Null值-->
+            <if test="id!=null">
+                and id = #{id}
+            </if>
+            <!--if条件语句,判断lastName并且不为空,注:&&和""特殊符号需要进行转义才可解析-->
+            <if test="lastName!=null&amp;&amp;lastName!=&quot;&quot;">
+                and last_name = #{lastName}
+            </if>
+            <!--if条件语句,判断email不为Null值,并且去掉前后指定字符不为空,注:用and和''就不需要进行转义-->
+            <if test="email!=null and email.trim()!=''">
+                and email = #{email}
+            </if>
+            <!--if条件语句,判断gender等于0或者等于1-->
+            <if test="gender==0 or gender==1">
+                and gender = #{gender}
+            </if>
+        </where>
+    </select>
+
+    <!--public List<Employee> getEmpsByConditionTrim(Employee condition);-->
+    <select id="getEmpsByConditionTrim" resultType="com.mybatis.bean.Employee">
+        select id ,last_name,email,gender from tbl_employee
+        <!--
+			prefix:  添加一个前缀
+			prefixOverrides: 覆盖/去掉一个前缀
+			suffxi:  添加一个后缀
+			suffixOverrides: 覆盖/去掉一个后缀
+		 -->
+        <!--假如在SQL语句and或者or不是写在前,可以使用trim进行覆盖去掉-->
+        <!--prefix添加一个前缀where,作用与标签where是一样-->
+        <!--语句后有and|or可以使用suffixOverrides-->
+        <!--注意:trim标签是可以相互嵌套的,如果不确定过滤and和or的写法,可以写两层trim分别过滤and和or-->
+        <trim prefix="where" suffixOverrides="and | or">
+            <if test="id!=null">
+                 id = #{id} and
+            </if>
+            <if test="lastName!=null&amp;&amp;lastName!=&quot;&quot;">
+                 last_name = #{lastName} and
+            </if>
+            <if test="email!=null and email.trim()!=''">
+                 email = #{email} and
+            </if>
+            <if test="gender==0 or gender==1">
+                 gender = #{gender} and
+            </if>
+        </trim>
+    </select>
+
+    <!--public List<Employee> getEmpsByConditionSet(Employee condition);-->
+    <!--set操作主要是过滤掉修改操作中SQL多出的逗号,其功能trim标签也可以完成-->
+    <update id="updateEmpsByConditionSet">
+        update tbl_employee
+    <set>
+        <if test="lastName != null">
+            last_name = #{lastName},
+        </if>
+        <if test="email != null">
+            email = #{email},
+        </if>
+        <if test="gender ==0 or gender ==1">
+            gender = #{gender},
+        </if>
+    </set>
+        where id = #{id}
+    </update>
+
+    <!--    public List<Employee> getEmpsByConditionChoose(Employee condition);-->
+    <select id="getEmpsByConditionChoose" resultType="com.mybatis.bean.Employee">
+        select id ,last_name,email,gender from tbl_employee
+        <where>
+        <!--当有一个条件满足时就不会再执行下其它的条件,否则使用默认条件-->
+            <choose>
+                <when test="id!=null">
+                    id = #{id}
+                </when>
+                <when test="lastName!=null">
+                    last_name=#{lastName}
+                </when>
+                <when test="email!=null">
+                    email=#{email}
+                </when>
+                <otherwise>
+                    gender = 0
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <!--
+            foreach：
+                collection:指定要迭代的集合
+                item: 当前从集合中迭代出的元素
+                open: 指定一个开始字符
+                close:指定一个结束字符
+                separator: 元素与元素之间的分隔符
+         -->
+    <!--    public List<Employee> getEmpsByConditionForeach(@Param("ids") List<Integer> ids);-->
+    <select id="getEmpsByConditionForeach" resultType="com.mybatis.bean.Employee">
+        <!--
+			select * from tbl_employee where id in(?,?,?);
+			select * from tbl_employee where id = ?  or id = ?  or id = ? ...
+		 -->
+        select id ,last_name,email,gender from tbl_employee
+        <!--collection:指定命名参数,item:迭代后的元素名,用于下面参数指定,open:迭代开始前的拼接元素,close:迭代结束后的拼接元素,separator:每次迭代后的拼接元素-->
+        <foreach collection="ids" item="id" open="where id in (" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <!--public void addEmps(@Param("emps") List<Employee> emps);-->
+    <insert id="addEmps">
+        insert into tbl_employee (last_name , email,gender) values
+        <foreach collection="emps" item="emp" separator=",">
+            (#{emp.lastName},#{emp.email},#{emp.gender})
+        </foreach>
+    </insert>
+</mapper>
+

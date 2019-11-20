@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mybatis.dao.DepartmentMapperResultMap">
+
+    <!--public Department getDeptById(Integer id);-->
+    <select id="getDeptById" resultType="com.mybatis.bean.Department">
+        select id, depart_name from tbl_dept where id = #{did}
+    </select>
+    <!--    public Department getDeptAndEmps(Integer id);-->
+    <select id="getDeptAndEmps" resultMap="myDeptAndEmps">
+        select d.id , d.depart_name,e.id eid ,e.last_name,e.email,e.gender from tbl_dept d left join tbl_employee e on d.id = e.d_id where d.id = #{id}
+    </select>
+
+    <resultMap id="myDeptAndEmps" type="com.mybatis.bean.Department">
+        <id column="id" property="id"/>
+        <result column="depart_name" property="departName"/>
+        <!--
+			collection: 完成集合类型的联合属性的映射
+				property: 指定联合属性
+				ofType: 指定集合中元素的类型
+
+		 -->
+        <!--同理,这里的property就是Department.emps属性,ofType就是Department.emps的返回的集合中的类型-->
+        <collection property="emps" ofType="com.mybatis.bean.Employee">
+            <id column="eid" property="id"/>
+            <result column="last_name" property="lastName"/>
+            <result column="email" property="email"/>
+            <result column="gender" property="gender"/>
+        </collection>
+    </resultMap>
+
+
+    <!-- collection 分步查询:
+		  需求:  查询部门信息 并且查询部门下所有的员工信息
+		 	   1. 先根据部门的id查询部门的信息
+		 	   2. 再根据部门的id作为员工的外键 查询所有的员工信息
+	 -->
+    <!--    public Department getDeptAndEmpsStep(Integer id);-->
+    <select id="getDeptAndEmpsStep" resultMap="myDeptAndEmpsStep">
+        select id, depart_name from tbl_dept where id = #{id}
+    </select>
+    <resultMap id="myDeptAndEmpsStep" type="com.mybatis.bean.Department">
+        <id column="id" property="id"/>
+        <result column="depart_name" property="departName"/>
+        <!--column:把第一个select语句的查询结果字段赋值给指定的查询-->
+        <collection property="emps" select="com.mybatis.dao.EmployeeMapperResultMap.getEmpsByDid" column="id"/>
+    </resultMap>
+</mapper>
+

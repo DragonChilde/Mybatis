@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mybatis.dao.EmployeeMapperResultMap">
+
+    <!-- public Employee getEmployeeById();-->
+    <select id="getEmployeeById" resultMap="myEmp">
+        select id,last_name AS lastName ,email ,gender from tbl_employee where id = #{id}
+    </select>
+
+
+    <!-- 自定义映射
+		type: 最终结果集封装的类型
+		<id>: 完成主键列的映射
+			column: 指定结果集的列名
+			property:指定对象的属性名
+		<result>:完成普通列的映射
+	 -->
+    <!--
+            id      last_name        email              gender
+           1001     李四            lisi@gmail.com         0
+     -->
+    <resultMap id="myEmp" type="com.mybatis.bean.Employee">
+        <id column="id" property="id"/>
+        <result column="last_name" property="lastName"/>
+        <result column="email" property="email"/>
+        <result column="gender" property="gender"/>
+    </resultMap>
+
+    <!--
+		需求: 查询员工对象， 并且查询员工所在 的部门信息.
+	 -->
+    <!--public Employee getEmpAndDeptById(Integer id);-->
+    <select id="getEmpAndDeptById" resultMap="myEmpAndDept">
+        select e.id eid,e.last_name,e.email,e.gender,d.id did,d.depart_name from tbl_employee e, tbl_dept d where e.id = #{id} and d.id = e.d_id
+    </select>
+
+    <!--
+            id           last_name        email              gender       did  dept_name
+           1001        李四              lisi@gmail.com         0         4       开发部
+     -->
+    <resultMap id="myEmpAndDept" type="com.mybatis.bean.Employee">
+        <id column="eid" property="id"/>
+        <result column="last_name" property="lastName"/>
+        <result column="email" property="email"/>
+        <result column="gender" property="gender"/>
+        <!--级联-->
+       <!-- <result column="did" property="department.id"/>
+        <result column="dept_name" property="department.departName"/>-->
+        <!--
+	 		association: 完成关联、联合属性的映射
+	 			property: 指定联合属性
+	 			javaType: 指定联合属性的类型
+	 	 -->
+        <!--同理,这里的property就是Employee.department的属性,javaType就是Employee.department的类型-->
+        <association property="department" javaType="com.mybatis.bean.Department">
+            <id column="did" property="id"/>
+            <result column="depart_name" property="departName"/>
+        </association>
+    </resultMap>
+
+
+    <!--
+        association 使用分步查询:
+        需求:  查询员工信息并且查询员工所在的部门信息.
+              1. 先根据员工的id查询员工信息
+              2. 使用外键 d_id查询部门信息
+     -->
+    <!--    public Employee getEmpAndDeptStep(Integer id);-->
+    <select id="getEmpAndDeptStep" resultMap="myDeptAndEmpsStep">
+        select id,last_name,email,gender,d_id from tbl_employee where id =#{id}
+    </select>
+
+    <resultMap id="myDeptAndEmpsStep" type="com.mybatis.bean.Employee">
+        <id column="id" property="id"/>
+        <result column="last_name" property="lastName"/>
+        <result column="email" property="email"/>
+        <result column="gender" property="gender"/>
+        <!-- 分步查询 -->
+        <!--column:把第一个select语句的查询结果字段赋值给指定的查询-->
+        <association property="department" select="com.mybatis.dao.DepartmentMapperResultMap.getDeptById" column="{did=d_id}" fetchType="eager"/>
+    </resultMap>
+
+    <!--public List<Employee> getEmps(Integer id);-->
+    <select id="getEmpsByDid" resultType="com.mybatis.bean.Employee">
+         <include refid="selectEmployeeSQL"/> tbl_employee where d_id = #{id}
+    </select>
+    
+    <sql id="selectEmployeeSQL">
+        select id,last_name AS lastName ,email ,gender from tbl_employee
+    </sql>
+</mapper>
+

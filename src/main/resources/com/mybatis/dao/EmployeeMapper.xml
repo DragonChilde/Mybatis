@@ -69,7 +69,24 @@
    <!-- public Employee selectEmployeeByMap(Map<String,Object> map);-->
     <!--注意:这里的命名方式是在Map里指定的key-->
     <select id="selectEmployeeByMap" resultType="com.mybatis.bean.Employee">
-        select id,last_name,email,gender from tbl_employee where id =#{id} and last_name=#{ln}
+        select id,last_name,email,gender from ${tableName} where id =#{id} and last_name=#{ln}
+    </select>
+
+    <!-- public List<Employee> getEmps();
+    resultType: 结果集的封装类型.
+-->
+    <select id="getAllEmps" resultType="com.mybatis.bean.Employee">
+        select id,last_name,email,gender from tbl_employee
+    </select>
+
+    <!-- public Map<String,Object> getEmployeeByIdReturnMap(Integer id);-->
+    <select id="getEmployeeByIdReturnMap" resultType="map">
+        select id,last_name ,email ,gender from tbl_employee where id = #{id}
+    </select>
+
+    <!--public Map<Integer,Employee> getEmployeesReturnMap();-->
+    <select id="getEmployeesReturnMap" resultType="com.mybatis.bean.Employee">
+        select id,last_name,email,gender from tbl_employee
     </select>
 </mapper>
 
